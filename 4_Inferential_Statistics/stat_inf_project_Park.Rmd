@@ -1,0 +1,213 @@
+---
+title: <center>Statistical inference with the GSS data</center>
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+<center> <h3> Sunah Park, 1. December 2018 </center>
+
+* * *
+## Synopsis
+This document was submitted as a final project of Inferential Statistics course as a part of Coursera Statistics with R specialiation. The research questions and the respective methods used in this study are listed below.
+
+1. Research questions\
+Research question 1: Is the percentage of males with high level of Job satisfaction less than the percentage of females with high level of job satisfaction in 2012? \
+Research question 2: Is there any relationship between job satisfaction and gender in 2012? 
+
+2. Statistical methods\
+For the research question 1: Inference analysis about the difference in two population proportions\
+For the research question 2: Chi-square test for independence testing
+
+* * *
+
+
+## Part 1: Data 
+Since 1972, the General Social Survey (GSS) has been monitoring societal change and studying the growing complexity of American society. The GSS aims to gather data on contemporary American society in order to monitor and explain trends and constants in attitudes, behaviors, and attributes; to examine the structure and functioning of society in general as well as the role played by relevant subgroups; to compare the United States to other societies in order to place American society in comparative perspective and develop cross-national models of human society; and to make high-quality data easily accessible to scholars, students, policy makers, and others, with minimal cost and waiting.
+GSS questions cover a diverse range of issues including national spending priorities, marijuana use, crime and punishment, race relations, quality of life, confidence in institutions, and sexual behavior.
+
+__Inference generalizability and causality:__\
+GSS uses a random sampling for the data collection which allows a generalization from the results of analysis using its data to the rest of the US population. Nonetheless, the causality between variables cannot be demonstrated as a random assignment is not applied.
+
+
+__More Info__: \
+[GSS](http://gss.norc.org/) 
+
+* * *
+
+
+## Part 2: Research questions
+
+__Research question 1:__ Is the percentage of males with high level of Job satisfaction less than the percentage of females with high level of job satisfaction in 2012? \
+__Research question 2:__ Is there any relationship between job satisfaction and gender in 2012? 
+
+For the analysis, the GSS data variables of job satisfaction(*satjob*), gender(*sex*) and the year(*year*) were used.
+
+* * *
+
+## Part 3: Exploratory data analysis
+### Setup
+```{r mychunksetup, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=12,
+    fig.height=8,
+    dpi=200
+)
+```
+
+### Load Libraries
+```{r load-libraries, message = FALSE}
+library(tidyverse) # load tidyverse library
+library(statsr) # load statsr library
+library(gplots) # load gplots library
+library(corrplot) # load coorplot library
+```
+
+### Load Data
+```{r load-data}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE)
+setwd("~/Desktop/Coursera/Statistics_with_R/labs_Sunah/2.5_Assignment") # set the working directory
+load("gss.Rdata")
+df<-as.data.frame(gss) # assign brfss2013 as data frame with the name 'df'
+```
+
+### Quick view of the loaded data
+```{r quick_view}
+dim(df)
+head(df,2) # first 2 rows of the data frame
+```
+
+
+* * *
+
+```{r Exp_DA}
+df_2012<-df %>%
+    select(year, satjob, sex) %>%
+    filter(year==2012) %>% # Subsetting data for the year 2012
+    na.omit
+
+df_2012$satjob<-factor(df_2012$satjob, levels=rev(levels(factor(df_2012$satjob)))) # Reversing the level order of factor
+
+
+table1<-table(df_2012$satjob, df_2012$sex);table1 # Creating a contingency table
+table2<-prop.table(table1,2); table2 # Creating a Frequency table
+
+
+# Visualization of contingency table
+# 1. Balloonplot
+balloonplot(table1, main="", xlab="Job Satisfaction", ylab="Gender", label=TRUE, show.margins=T) # from gplots package
+
+# 2. Barplots
+ggplot(df_2012, aes(x=sex, fill=satjob))+geom_bar(position="dodge",alpha=0.75)+theme_bw(base_family="Avenir")+labs(x="Gender", y="Number of respondents")+guides(fill=guide_legend(title="Job satisfaction"))+theme(legend.position="bottom")+coord_flip()
+
+ggplot(df_2012, aes(x=sex, color=satjob))+geom_bar(position="fill",alpha=0.1)+theme_grey(base_family="Avenir")+labs(x="Gender", y="Proportion")+guides(color=guide_legend(title="Job satisfaction"))
+
+
+```
+
+Findings from the exploratory analysis:  \
+1. Among 1457 total number of respondents 45% are males and 55% are females. \
+2. More than 85% of both male and female respondents answered that they are "Very" or "Moderate" satisfied with their jobs. \
+3. Around half of the respondents are "Very" satisfied with their jobs in both genders. 
+
+* * *
+
+## Part 4: Inference
+
+### Inferential analysis for Research question 1
+Research question: Is the percentage of males with high level of Job satisfaction less than the percentage of females with high level of job satisfaction in 2012? \
+
+
+1. Hypotheses \
+__Null hypothesis__: $$p_{male}=p_{female}$$ 
+where p_male is the percentage of males in the US population who are "very satisfied" with their jobs in 2012 and p_female is the percentage of females in the US population who are "very satisfied" with their jobs in 2012 \
+__Alternative hypothesis__: $$p_{male}<p_{female}$$ \
+
+
+2. Condition checks\
+__Independence__: The data is from random sampling and the sample size is smaller than the 10% of US population. Furthermore, there is no reason to expect sampled males and females to be dependent.  
+__Sample size/skew__: 
+$$ n_{male}*\hat{p}_{pool}=655\times 0.5=327.5\ge10$$
+$$ n_{male}*(1-\hat{p}_{pool})=655\times (1-0.5)=327.5\ge10$$
+$$ n_{female}*\hat{p}_{pool}=802\times 0.5=401\ge10$$
+$$ n_{female}*(1-\hat{p}_{pool})=802\times (1-0.5)=401\ge10$$
+
+3. Statistical methods\
+Inference analysis about the difference in two population proportions\
+
+
+4. Inference 
+```{r rq1}
+table1 # Contingency table
+table2 # Frequency table
+phat_1<-table2[4,1]; phat_1 # Percentage of "Very satisfied" male respondents in sample
+phat_2<-table2[4,2]; phat_2 # Percentage of "Very satisfied" female respondents in sample
+delphat<-phat_1-phat_2; delphat # point estimate
+p_pool<-(table1[4,1]+table1[4,2])/sum(table1); p_pool # calculation of p_pool 
+n1<-apply(table1,2,sum)[1];n1 # number of male respondents in sample
+n2<-apply(table1,2,sum)[2];n2 # number of female respondents in sample
+SE<-sqrt((p_pool*(1-p_pool)/n1)+(p_pool*(1-p_pool)/n2)); SE # calculation of Standard Error
+
+pvalue<-pnorm(delphat,0,SE,lower.tail=TRUE); pvalue # calculation of p-value
+```
+5. Results interpretation\
+The p-value is larger than the significance level 0.05 which results in failing to reject the null hypothesis. Hence, there is no difference in the percentage of high job satisfaction level (in other words, "Very satisfied") between males and females in 2012.\
+
+
+
+### Inferential analysis for Research question 2
+Research question: Is there any relationship between job satisfaction and gender in 2012? \
+
+
+1. Hypotheses \
+__Null hypothesis__: Job satisfaction and gender in 2012 are independent.\
+__Alternative hypothesis__: Job satisfaction and gender in 2012 are dependent.\
+
+
+2. Condition checks\
+__Independence__: The data is from random sampling and the sample size is smaller than the 10% of US population. Furthermore, there is no reason to expect sampled males and females to be dependent.  
+__Sample size__: Each particular scenario has an expected count greater than 5.
+
+
+3. Statistical methods\
+Chi-square test for independence testing
+
+4. Inference
+```{r rq2-1}
+table1; # Contingency table
+cst<-chisq.test(table1);cst # execution of chi square test
+corrplot(cst$residuals)
+```
+
+```{r rq2-2}
+# Alternatively, we can also use the inference function from statsr package
+inference(y=sex, x=satjob, data=df_2012, 
+          type="ht",
+          statistic="proportion",
+          method="theoretical", 
+         # sig_level=0.05, #alpha
+         # conf_level=0.95,
+          alternative="greater")
+```
+
+
+5. Result interpretation \
+The p-value of chi square test yields 0.75 which is larger than the significance level of 0.05. So we fail to reject the null hypothesis. In other words, job satisfaction and gender for the year 2012 are independent.
+
+
+

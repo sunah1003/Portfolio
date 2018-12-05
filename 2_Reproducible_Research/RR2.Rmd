@@ -1,0 +1,130 @@
+<center> <h1> *Effects of Climate Events on Health and Economy in the United States over the year of 1950 and 2011*  </center>
+<center> <h3> Sunah Park, 25. October 2018 </center>
+
+## 1. SYNOPSIS
+This report identifies the impact of severe weather events on both public health and economy for communities and municipalities in the United States. 
+
+For this purpose, historical data about severe weather events in the U.S. from 1950 to November 2011, which are available from the U.S. National Oceanic and Atmospheric Administration's (NOAA) strom database was used. This database include characteristics of major storms and weather events in the U.S. accompanied with the date and the place of occurrence as well as information about any health damages such as fatalities, injuries and economic damages of properties and crops.  
+
+
+## 2. DATA PROCESSING
+The data used for this analysis is available on the following link in the form of a csv(comma-separated-value) file that is compressed via the bzip2 to reduce its size: 
+[Raw Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+
+The documentation as well as FAQ of the database can be also found in the following link:
+[Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) and
+[FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+### Preparation
+```{r}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE)
+rm(list=ls()) # removing all objects
+setwd("~/Desktop/Coursera/Data_Science_Specialization/5_Reproducible_Research/W4") # Setting the working directory
+library(knitr);library(lattice);library(dplyr)
+
+```
+
+
+### Loading the data  
+```{r}
+URL<-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2" 
+if(!file.exists("repdata%2Fdata%2FStormData.csv.bz2")) {
+        download.file(url=URL, destfile="df_original.csv", method="curl")}
+
+df_orig<-read.csv("df_original.csv", header=TRUE)
+summary(df_orig) # Viewing the summary of the data
+```
+
+### Processing the data
+For the analysis, the following seven variables from the original data base are considered:
+* 1. Type of event (Column name: "EVTYPE")
+* 2. Number of Fatalities (Column name: "FATALITIES")
+* 3. Number of Injuries (Column name: "INJURIES")
+* 4. Property Damage (Column name: "PROPDMG")
+* 5. Property Damage Multiplier (Column name: "PROPDMGEXP")
+* 6. Crop Damage (Column name: "CROPDMG")
+* 7. Crop Damage Multiplier (Column name: "CROPDMGEXP").
+
+```{r}
+var_new<-c("EVTYPE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP")
+df<-df_orig %>% select(var_new)
+sum(is.na(df)) # Checking missing values
+head(df,3) # Checking the first 3 rows of the new data frame
+
+
+# Data frame generation for Fatalities and Injuries
+df_human<-df %>%
+        group_by(EVTYPE) %>%
+        summarize(fat=sum(FATALITIES),inj=sum(INJURIES))%>%
+        arrange(desc(fat))
+
+
+# Data frame generation for Property and Crop Damages
+df$PROPDMGEXP<-as.character(df$PROPDMGEXP)
+df[is.na(df$PROPDMGEXP),"PROPDMGEXP"]<-1
+df[grep("k", df$PROPDMGEXP, ignore.case=TRUE), "PROPDMGEXP"]<-10^3;df[grep("K", df$PROPDMGEXP, ignore.case=TRUE), "PROPDMGEXP"]<-10^3
+df[grep("m", df$PROPDMGEXP, ignore.case=TRUE), "PROPDMGEXP"]<-10^6;df[grep("M", df$PROPDMGEXP, ignore.case=TRUE), "PROPDMGEXP"]<-10^6
+df[grep("B", df$PROPDMGEXP, ignore.case=TRUE), "PROPDMGEXP"]<-10^9
+df$PROPDMGEXP<-as.numeric(df$PROPDMGEXP)
+sum(is.na(df$PROPDMGEXP))
+df[is.na(df$PROPDMGEXP),"PROPDMGEXP"]<-1
+df$PROPDMG<-df$PROPDMG*df$PROPDMGEXP
+
+df$CROPDMGEXP<-as.character(df$CROPDMGEXP)
+df[is.na(df$CROPDMGEXP),"CROPDMGEXP"] <-1
+df[grep("k", df$CROPDMGEXP, ignore.case=TRUE), "CROPDMGEXP"]<-10^3;df[grep("K", df$CROPDMGEXP, ignore.case=TRUE), "CROPDMGEXP"]<-10^3
+df[grep("m", df$CROPDMGEXP, ignore.case=TRUE), "CROPDMGEXP"]<-10^6;df[grep("M", df$CROPDMGEXP, ignore.case=TRUE), "CROPDMGEXP"]<-10^6
+df[grep("B", df$CROPDMGEXP, ignore.case=TRUE), "CROPDMGEXP"]<-10^9
+df$CROPDMGEXP<-as.numeric(df$CROPDMGEXP)
+sum(is.na(df$CROPDMGEXP))
+df[is.na(df$CROPDMGEXP),"CROPDMGEXP"]<-1
+df$CROPDMG<-df$CROPDMG*df$CROPDMGEXP
+
+
+
+df_econ<-df %>%
+        select(EVTYPE, PROPDMG,CROPDMG)%>%
+        group_by(EVTYPE) %>%
+        summarize(prop=sum(PROPDMG)/10^9,
+                  crop=sum(CROPDMG)/10^9) %>%
+        arrange(desc(prop))
+
+
+
+```
+
+Now we have two data frames of 
+(1)df_human: for health damages (fatalities and injuries) and
+(2)df_econ: for economic damages (property and crop).
+
+## 3. RESULTS
+The results are shown in the graphics below.
+``` {r}
+# Visualization of the processed data
+# Impact of the weather events on public health (fatalities and injuries): 
+df_human$EVTYPE<-factor(df_human$EVTYPE, 
+                levels=unique(as.character(df_human$EVTYPE)))
+barchart(fat+inj~EVTYPE, data=df_human[1:7,],stack=TRUE,
+         xlab="Event Type",
+         ylab="Total number of Fatalities and Injuries",
+         main="Impact of the weather events on public health",
+         auto.key=list(space="top",text=c("Fatalities","Injuries")),
+         scales=list(x=list(rot=90)))
+
+
+# Impact of the weather events on economy (property and crop damages): 
+df_econ$EVTYPE<-factor(df_econ$EVTYPE, 
+                        levels=unique(as.character(df_econ$EVTYPE)))
+
+barchart(prop+crop~EVTYPE, data=df_econ[1:7,],stack=TRUE,
+         xlab="Event Type",
+         ylab="Total damage in billion USD",
+         main="Impact of the weather events on economy",
+         auto.key=list(space="top",text=c("Property Damage","Crop Damage")),
+         scales=list(x=list(rot=90)))
+
+
+``` 
+
+## 4. CONCLUSION
+During the period of 1950 and 2011 in the U.S., _'Tornado'_ caused the most impact on both in terms of 'Fatalities' and 'Injuries'. With respect to economic damage, _'Flood'_ was the event that had the largest impact. 
