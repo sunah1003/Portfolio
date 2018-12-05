@@ -1,0 +1,101 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output:
+html_document: 
+keep_md: true
+---
+
+
+
+## Loading and preprocessing the data
+
+```{r, echo=TRUE}
+# Loading and preprocessing the data
+rm(list=ls()) # remove all objects
+library(dplyr) # open dplyr library
+library(ggplot2) # open ggplot2 library
+library(lubridate) # open lubridate library
+library(knitr) # open knitr library 
+opts_chunk$set(echo=TRUE) # set echo=TRUE
+
+###################################
+setwd("~/desktop/Coursera/Data_Science_Specialization/5_Reproducible_Research/W2")
+unzip("repdata%2Fdata%2Factivity.zip")
+df_act<-read.csv("activity.csv", header=TRUE, na.string=NA)
+df_act$date<-ymd(df_act$date) # change the class of df_act$date to date
+#str(df_act);summary(df_act)
+```
+## What is mean total number of steps taken per day?
+```{r, echo=TRUE}
+df_act2<-df_act %>%
+        filter(!is.na(steps)) %>%
+        group_by(date) %>%
+        summarize(sum_daily=sum(steps)) # making a new data frame which is groupped by the date
+
+g<-ggplot(df_act2, aes(x=sum_daily))
+g+geom_histogram(fill="blue", binwidth=1000)+labs(x="Steps per day",y="Frequency")+ggtitle("Histogram of steps per day") # making histrogram
+
+mean_daily<-mean(df_act2$sum_daily);mean_daily # daily mean of the total number of steps
+median_daily<-median(df_act2$sum_daily); median_daily # daily median of the total number of steps 
+
+```
+## What is the average daily activity pattern?
+```{r, echo=TRUE}
+df_act3<-df_act %>%
+        filter(!is.na(steps)) %>%
+        group_by(interval) %>%
+        summarize(mean=mean(steps)) # making new data frame which is groupped by interval
+
+g<-ggplot(df_act3, aes(x=interval, y=mean))
+g+geom_line(color=rgb(0,0,1,0.3),size=1)+labs(x="Interval", y="Average steps")+ggtitle("Average activity pattern") # time series plot
+max_steps<-df_act3[which.max(df_act3$mean),]; max_steps # maximum number of steps
+
+```
+## Imputing missing values
+```{r, echo=TRUE}
+# Imputing missing values
+nas<-is.na(df_act$steps)
+sum(nas) # The total number of missing values
+avg_interval<-tapply(df_act$steps, df_act$interval, mean, na.rm=TRUE)
+df_act$steps[nas]<-avg_interval[as.character(df_act$interval[nas])] # substituting NAs in steps through the daily mean
+
+df_act4<-df_act %>%
+        filter(!is.na(steps)) %>%
+        group_by(date) %>%
+        summarize(sum_daily=sum(steps)) # making new data frame which is grouped by date
+sum(is.na(df_act4)) # check whether there still exist missing values in the data frame
+
+g<-ggplot(df_act4, aes(x=sum_daily))
+g+geom_histogram(fill=rgb(1,0,0,0.3), binwidth=1000)+labs(x="Steps per day",y="Frequency")+ggtitle("Histogram of steps per day") # making histogram 
+ 
+mean_daily_new<-mean(df_act4$sum_daily);mean_daily_new #calculating new daily mean of total number of steps
+median_daily_new<-median(df_act4$sum_daily);median_daily_new #calculating new daily median of total number of steps 
+
+```
+## Are there differences in activity patterns between weekday and weekends?
+```{r, echo=TRUE}
+df_act5<-mutate(df_act, wtyp=ifelse(wday(df_act$date, label=TRUE) %in% c("Sat","Sun"),"Weekend","Weekday")) # making a new data frame mutated from df_act but with a column assigned with weektype(weekend or weekday)
+df_act5$wtyp<-as.factor(df_act5$wtyp);
+#class(df_act5$wtyp) # changing the class of wtyp from character to factor
+
+df_act6<-df_act5 %>%
+       # filter(!is.na(steps)) %>%
+        group_by(interval, wtyp) %>%
+        summarize(steps=mean(steps)); 
+#str(df_act6) # creating a new data frame which is grouped by interval and wtyp
+
+
+g<-ggplot(df_act6, aes(x=interval, y=steps, color=wtyp))
+g+geom_line()+facet_wrap(.~wtyp, ncol=1,nrow=2)+labs(x="Interval",y="Steps",title="Activity patterns in Weekdays and Weekend") # creating a panel plot
+```
+
+
+
+
+
+
+
+
+
+
+

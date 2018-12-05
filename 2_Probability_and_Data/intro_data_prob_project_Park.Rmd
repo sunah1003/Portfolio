@@ -1,0 +1,240 @@
+---
+title: <center>Exploring the BRFSS data</center>
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+<center> <h3> Sunah Park, 30. November 2018 </center>
+
+## Synopsis
+This document is submitted as a final course project for the Introduction to Probability and Data course as a part of Coursera Statistics with R specialiation. The research questions which were investigated through exploratory data analysis are:
+
+
+* Research question 1: Has education level or household income level effect on the frequency of using seatbelts in a car?
+
+* Research question 2: Is there any relationship between marital status and general health condition? Is there any difference between gender?
+
+* Research question 3: Does a married person do more sport than those who is not in a married status? Is there any difference between male and female respondents? 
+
+
+## Part 1: Data
+__Background__ 
+
+The Behavioral Risk Factor Surveillance System (BRFSS) is a collaborative project between all of the states in the United States (US) and participating US territories and the Centers for Disease Control and Prevention (CDC). The BRFSS is administered and supported by CDC’s Population Health Surveillance Branch, under the Division of Population Health at the National Center for Chronic Disease Prevention and Health Promotion. BRFSS is an ongoing surveillance system designed to measure behavioral risk factors for the non-institutionalized adult population (18 years of age and older) residing in the US. The BRFSS was initiated in 1984, with 15 states collecting surveillance data on risk behaviors through monthly telephone interviews. Over time, the number of states participating in the survey increased; by 2001, 50 states, the District of Columbia, Puerto Rico, Guam, and the US Virgin Islands were participating in the BRFSS. Today, all 50 states, the District of Columbia, Puerto Rico, and Guam collect data annually and American Samoa, Federated States of Micronesia, and Palau collect survey data over a limited point- in-time (usually one to three months). In this document, the term “state” is used to refer to all areas participating in BRFSS, including the District of Columbia, Guam, and the Commonwealth of Puerto Rico.
+
+The BRFSS objective is to collect uniform, state-specific data on preventive health practices and risk behaviors that are linked to chronic diseases, injuries, and preventable infectious diseases that affect the adult population. Factors assessed by the BRFSS in 2013 include tobacco use, HIV/AIDS knowledge and prevention, exercise, immunization, health status, healthy days — health-related quality of life, health care access, inadequate sleep, hypertension awareness, cholesterol awareness, chronic health conditions, alcohol consumption, fruits and vegetables consumption, arthritis burden, and seatbelt use. Since 2011, BRFSS conducts both landline telephone- and cellular telephone-based surveys. In conducting the BRFSS landline telephone survey, interviewers collect data from a randomly selected adult in a household. In conducting the cellular telephone version of the BRFSS questionnaire, interviewers collect data from an adult who participates by using a cellular telephone and resides in a private residence or college housing.
+
+Health characteristics estimated from the BRFSS pertain to the non-institutionalized adult population, aged 18 years or older, who reside in the US. In 2013, additional question sets were included as optional modules to provide a measure for several childhood health and wellness indicators, including asthma prevalence for people aged 17 years or younger.
+
+
+The sample data was collected from a random sampling and can be used to generalize the results. However, this is an observational study, therefore, the causality through the sample data cannot be establised. 
+
+__References__
+
+* [BRFSS Questionnaire](https://www.cdc.gov/brfss/questionnaires/pdf-ques/2013%20BRFSS_English.pdf) 
+* [BRFSS Codebook](https://www.cdc.gov/brfss/annual_data/2013/pdf/CODEBOOK13_LLCP.pdf)
+* [BRFSS Guide to Calculated Variables](http://www.cdc.gov/brfss/annual_data/2013/pdf/2013_Calculated_Variables_Version15.pdf)
+* [BRFSS Guide to Optional Modules Used, by State](http://apps.nccd.cdc.gov/BRFSSModules/ModByState.asp?Yr=2013)
+
+
+* * *
+
+
+
+
+## Part 2: Research questions
+
+* Research question 1: Has household income level or education level effect on the frequency of using seatbelts in a car?
+
+* Research question 2: Is there any relationship between marital status and general health condition? Is there any difference between gender?
+
+* Research question 3: Does a married person do more sport than those who is not in a married status? Is there any difference between male and female respondents? 
+
+* * *
+
+
+## Part 3: Exploratory data analysis
+### Setup
+```{r mychunksetup, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=12,
+    fig.height=8,
+    dpi=200
+)
+```
+
+### Load Libraries
+```{r load-libraries, message = FALSE}
+setwd("~/Desktop/Coursera/Statistics_with_R/labs_Sunah/1.5_Assignment") # set the working directory
+library(tidyverse) # load tidyverse library
+```
+
+### Load Data
+```{r load-data}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE)
+load("brfss2013.RData")
+df<-as.data.frame(brfss2013) # assign brfss2013 as data frame with the name 'df'
+```
+
+### Quick view of the loaded data
+```{r quick_view}
+dim(df)
+head(df,2) # first 2 rows of the data frame
+```
+
+
+* * *
+**Research quesion 1: Has education level or household income level effect on the frequency of using seatbelts in a car?**
+
+```{r q1_1} 
+df_q1_1<-df %>%
+    select(income2, seatbelt) %>%
+    group_by(income2, seatbelt) %>%
+    arrange(desc(income2)) %>%
+    na.omit # complete.cases(.)
+
+df_q1_1$seatbelt <- factor(df_q1_1$seatbelt, levels=rev(levels(df_q1_1$seatbelt)))
+
+
+ggplot(df_q1_1, aes(income2, fill=seatbelt))+geom_bar(position="fill")+
+    labs(x="Annual household income level", y="Proportion", title=(""))+
+    theme(legend.position="bottom",axis.text.x=element_text(angle=90, hjust=1, vjust=0.5),
+       axis.title.x=element_text(angle=0),
+       plot.title=element_text(hjust=0.5))
+
+```
+
+As shown in the figure above, the proportion of people who always or nearly always use seatbelts increases by trend as the annual household income increases. However the increase rate in the proportion is not significant. 
+
+```{r q1_2}
+df_q1_2<-df %>%
+    select(educa, seatbelt) %>%
+    group_by(educa, seatbelt) %>%
+  mutate(class=ifelse(educa=="Never attended school or only kindergarten","Only Kindergarten",
+                      ifelse(educa=="Grades 1 through 8 (Elementary)","Elementary",
+                             ifelse(educa=="Grades 9 though 11 (Some high school)","Some high school",
+                             ifelse(educa=="Grade 12 or GED (High school graduate)","High school graduate",
+                                    ifelse(educa=="College 1 year to 3 years (Some college or technical school)","College or Technical school","College graduate")))))) %>%
+    #arrange(desc(educa)) %>%
+    na.omit # complete.cases(.)
+
+df_q1_2$class<-factor(df_q1_2$class, levels=c("Only Kindergarten",
+                                          "Elementary",
+                                          "Some high school",
+                                          "High school graduate",
+                                          "College or Technical school",
+                                          "College graduate"))
+
+df_q1_2$seatbelt <- factor(df_q1_2$seatbelt, levels=rev(levels(df_q1_2$seatbelt)))
+
+ggplot(df_q1_2, aes(x=class, fill=seatbelt))+geom_bar(position="fill")+
+    labs(x="Education Level", y="Proportion", title=(""))+
+    theme(legend.position="bottom",axis.text.x=element_text(angle=90, hjust=1, vjust=0.5),
+       axis.title.x=element_text(angle=0),
+       plot.title=element_text(hjust=0.5))
+
+```
+
+The higher the education the respondent have had, the higher is the frequency of "always or nearly always" use of seatbelt in a car. However it is not likely to say that there is a strong relationship between the two variables. 
+
+* * *
+
+**Research quesion 2: Is there any relationship between marital status and general health condition? Is there any difference between gender?**
+```{r q2}
+class(df$marital)
+## Replace specified values with new values in a factor
+levels(df$marital)[levels(df$marital)=="Married"]<-"M"
+levels(df$marital)[levels(df$marital)=="Divorced"]<-"D"
+levels(df$marital)[levels(df$marital)=="Widowed"]<-"W"
+levels(df$marital)[levels(df$marital)=="Separated"]<-"S"
+levels(df$marital)[levels(df$marital)=="Never married"]<-"NM"
+levels(df$marital)[levels(df$marital)=="A member of an unmarried couple"]<-"UN"
+levels(factor(df$marital))
+
+
+
+# Optional: One can also replace the levels through revalue function from plyr package
+library(plyr)
+levels(df$marital)<-revalue(levels((df$marital)), c("Married"="M",
+                              "Divorced"="D",
+                              "Widowed"="W",
+                              "Separated"="S",
+                              "Never married"="NM",
+                              "A member of an unmarried couple"="UN"))
+########################################################
+
+
+table(df$marital)
+table1<- table(df$sex,df$marital,df$genhlth); 
+table1 # generate a contingency table
+
+mosaicplot(table1,main="",
+           xlab="General health condition",
+           ylab="Marital status",
+           las=c(0),
+           color=TRUE,
+           type="pearson",
+           shade=FALSE)
+
+```
+Abbreviation of Marital Status: M stands for Married, D for Divorced, W for Widowed, S for Sepearated, NM for Never married, UN for A member of an unmarried couple
+
+Majority of the married respondent answered that they are in excellent, very good or good health condition in both gender. The proportion of being in more than "good" general health condition (excellent, very good and good) decreased for those who are divorced, widowed and separated in comparison to the married respondents. However, when it comes to the never married respondents, the proportion did not show a significant difference compared to the married. This tendency was shown similar in both male and female respondents. 
+
+* * *
+**Research quesion 3: Does a married person do more sport than those who is not in a married status? Is there any difference between male and female respondents? 
+**
+```{r q3}
+df_q3_1<-df %>%
+    select(sex,exerany2,marital) %>%
+    group_by(sex,exerany2,marital) %>%
+    na.omit
+
+df_q3_1$exerany2<-factor(df_q3_1$exerany2, levels=c("No","Yes"))
+
+ggplot(df_q3_1, aes(x=sex, fill=exerany2))+geom_bar(position="fill")+
+    facet_grid(.~marital)+
+    labs(x="", y="Proportion",title=(""))+
+    theme(legend.position="bottom",axis.text.x=element_text(angle=90, hjust=1, vjust=0.5),
+       axis.title.x=element_text(angle=0),
+       plot.title=element_text(hjust=0.5))
+```
+Abbreviation of Marital Status: M stands for Married, D for Divorced, W for Widowed, S for Sepearated, NM for Never married, UN for A member of an unmarried couple
+
+The percentage of respondents who answered that they did participate in any physical activities or exercises during the past month was higher for those who are married compared to those who are divorced, widowed or separated respondents in both gender. Given the same marital status, the number of men respondents who have answered that they have done any physical activities during the past month were higher than the number of women respondents. 
+
+```{r q4}
+df_q3_2<-df %>%
+    select(exerany2,genhlth, sex) %>%
+    group_by(exerany2, genhlth,sex) %>%
+    na.omit
+
+df_q3_2$exerany2<-factor(df_q3_2$exerany2, levels=c("No","Yes"))
+
+ggplot(df_q3_2, aes(x=genhlth, fill=exerany2))+geom_bar(position="fill")+
+    labs(x="General health condition",
+         y="Proportion",title=(""))+
+    facet_grid(.~sex)+
+    theme(legend.position="bottom",axis.text.x=element_text(angle=90, hjust=1, vjust=0.5),
+       axis.title.x=element_text(angle=0),
+       plot.title=element_text(hjust=0.5))
+```
+The last graph above shows the relationship between the exercise behaviour and the general health condition. It is clearly shown that those who have done any physical activities within the last 30 days responded that they are in a better health condition at the moment of survey than those who haven't. This trend is shown both gender cases. 
+
+Based on this figure along with the exploratory analysis results from research question 2 and 3, the relationship between marital status and health condition as well as the exercise behaviour can not easily be generalized. 

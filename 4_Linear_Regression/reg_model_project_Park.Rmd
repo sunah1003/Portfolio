@@ -1,0 +1,229 @@
+---
+title: <center>Statistical inference with the GSS data</center>
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+<center> <h3> Sunah Park, 3. December 2018 </center>
+
+* * *
+## Executive Summary
+This document is submitted as a final project of Linear Regression and Modeling course as a part of Coursera Statistics with R specialiation. 
+The project utilizes multiple linear regression to analyse the provided data.
+
+__Research question:__ 
+
+1. Is there linear relationship between the scores given by the audience and runtime of movie or the fact whether or not the movie director has ever won an Oscar?
+
+2. How can we predict the audience score regarding these two variables?
+
+
+
+* * *
+## Part 1: Data
+The data set is comprised of 651 randomly sampled movies produced and released before 2016.
+
+__Inference generalizability and causality:__\
+The random sampling used for the data collection allows us to generalize the results of the analysis to the population. However, as it is an observational study with no random assignment, we cannot assure the causality between variables. 
+
+__More Info__: \
+[Rotten Tomatoes](https://www.rottentomatoes.com/) \
+[IMDB](https://www.imdb.com/) \
+
+
+* * *
+
+## Part 2: Research question
+1. Is there linear relationship between the scores given by the audience and runtime of movie or the fact whether or not the movie director has ever won an Oscar?
+
+2. How can we predict the audience score regarding these two variables?
+
+The response variable for this analysis is the audience score(*audience_score*) and the two explanatory variables are the runtime of movie(*runtime*) and the fact whether or not the movie director ever won an Oscar(*best_dir_win*).
+
+* * *
+
+## Part 3: Exploratory data analysis
+### Setup
+```{r mychunksetup, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+### Load Libraries
+```{r load-libraries, message = FALSE}
+library(tidyverse) # load tidyverse library
+library(ggplot2)
+library(statsr) # load statsr library
+#library(gplots) # load gplots library
+library(knitr)
+```
+
+### Load Data
+```{r load-data}
+knitr::opts_chunk$set(echo = TRUE,cache=TRUE)
+setwd("~/Desktop/Coursera/Statistics_with_R/labs_Sunah/3.4_Assignment") # set the working directory
+load("movies.Rdata")
+df<-as.data.frame(movies) # assign brfss2013 as data frame with the name 'df'
+```
+
+### Quick view of the loaded data
+```{r quick_view}
+dim(df)
+head(df,2) # first 2 rows of the data frame
+colnames(df)
+```
+
+### Visualization 
+```{r EDA}
+df<-df %>%
+    select(audience_score, director, runtime, best_dir_win) %>%
+    arrange(director) %>%
+    na.omit
+
+ggplot(data=df, aes(runtime))+geom_histogram(aes(runtime),alpha=0.4, bins=30)+theme_bw(base_family="Avenir")+labs(x="Runtime in minutes", y="Count", title="")+guides(color=guide_legend(title="Director ever won an Oscar"))+theme(legend.position="bottom")+geom_vline(xintercept=mean(df$runtime), linetype="dotted",color="black")
+
+ggplot(data=df, aes(x=runtime, y=audience_score))+geom_jitter(alpha=.5, aes(color=best_dir_win))+theme_bw(base_family="Avenir")+labs(x="Runtime in minutes", y="Audience score", title="")+guides(color=guide_legend(title="Director ever won an Oscar"))+theme(legend.position="bottom")+geom_smooth(method="lm", size=0.5, color="grey")
+
+
+ggplot(data=df, aes(x=runtime,y=audience_score, color=best_dir_win))+geom_boxplot()+theme_bw(base_family="Avenir")+facet_wrap(.~best_dir_win)+labs(x="Runtime in minutes", y="Audience score", title="")+guides(color=guide_legend(title="Director ever won an Oscar"))+theme(legend.position="bottom")
+
+
+summary(df$runtime)
+
+df_no<-df %>% filter(best_dir_win=="no")
+df_yes<-df %>% filter(best_dir_win=="yes")
+summary(df_no);summary(df_yes)
+```
+__Findings from EDA:__
+
+1. The interquartile range of the movie runtime is 92 minutes to 115 minutes. The mean value of the runtime is 105 minutes as illustrated with the dotted line in the histogram. The audience score in the interquartile range of runtime varies quite a lot as shown in the point plot. We can already observe that there is a weak linearity between the audience score and runtime, but the study will still continue the linear modeling with the aim to learn from the results. 
+
+2. In total there are 43 movies which are filmed by directors who have ever won Oscar(From now on, this group will be called as Yes-Oscar). The rest of 605 movies were filmed by those who have never won Oscar(From now on, this group will be called as No-Oscar). The range of audience score is wider in No-Oscar groups(11-96) compared to the Yes-Oscar (27-97). The mean and the median values of Yes-Oscar movies are higher than the No-Oscar movies. However, as the boxplot illustrates, there could exist some dependency between runtime and Oscar won. 
+
+* * *
+
+## Part 4: Modeling
+
+```{r modeling} 
+fit<-lm(audience_score~runtime+best_dir_win, data=df) # multiple linear model
+summary(fit)
+anova(fit)
+```
+
+### Model selection: Stepwise backward p-value elimination
+For the model selection, the stepwise backward p-value elimination model was used. The process of the model starts with the full model. If the p-value is above the significant level, here we consider 0.05, then that variable will be dropped. Afterwards we refit the model as well as repeat the process. If the largest p-value is less than the significance level, we would not eliminate any predictors and the current model would be the best-fitting model.
+As the p-value of best_dir_win from the full model is greater than the significant level of 0.05, we drop this variable and refit the model. 
+```{r model-sel}
+fit2<-lm(audience_score~runtime, data=df) # refitting after dropping best_dir_win
+summary(fit2)
+anova(fit2)
+```
+The p-value is now less than chosen significance level of 0.05. Therefore, we can choose this as our final model and accordingly we can set the final equation of our model as follows: 
+$$ {score_{audience}}=42.42+0.19\times{runtime} $$
+
+### Optional AIC strategy for model selection
+Alternatively, we can use the built-in step function using AIC strategy from statsr package for the model selection.
+```{r model-sel2}
+step<-step(fit, direction="backward", trace=TRUE, steps=100) # Choosing a model by AIC in a stepwise algorithm
+```
+It yields the same model selection. 
+
+
+
+### Diagnostics for Multiple Linear Regression
+Now we diagnose our final model according to the following conditions. 
+
+__Condition 1.__ Linear relationship between variables
+The explanatory variable is linearly related to the response variable. For that we look for a random scatter around 0.
+```{r cond1}
+df_con<-as.data.frame(cbind(fit2$residuals,df$runtime))
+colnames(df_con)<-c("residuals","runtime")
+
+ggplot(df_con,aes(x=runtime,y=residuals))+geom_point(alpha=0.5)+theme_bw(base_family="Avenir")+geom_hline(yintercept=0, color="red",linetype="solid",size=0.2)
+```
+Diagnostic: As shortly seen in the exploratory data analysis above, the explanatory and response variable does not show a linear trend.
+
+
+__Condition 2.__ Nearly normal residuals with mean 0
+```{r cond2}
+ggplot(df_con,aes(residuals))+geom_histogram()
+ggplot(df_con, aes(sample=residuals))+geom_qq(size=0.5)+geom_qq_line(size=0.5)
+```
+Diagnostic: There is a left skew.
+
+
+
+
+__Condition 3.__ Constant variability of residuals
+Residuals should be equally variable for low and high values of the predicted response variable. Residuals should be randomly scattered in a band with a constant width around 0.
+```{r cond3}
+# Checking using residual plots of residuals vs. predicted:
+ggplot(df_con,aes(x=fit2$fitted.values, y=residuals))+geom_point(alpha=0.5)+geom_hline(yintercept=0, color="red",linetype="solid",size=0.2)
+
+
+# Viewing absolute value of residuals vs. predicted to identify unusual observations:
+ggplot(df_con,aes(x=fit2$fitted.values, y=abs(residuals)))+geom_point(alpha=0.5)+geom_hline(yintercept=0, color="red",linetype="solid",size=0.2)
+
+```
+Diagnostic: The variability of residuals is non-constant. 
+
+
+__Condition 4.__ Independence of residuals
+```{r cond4}
+ggplot(df_con, aes(x=runtime, y=residuals))+geom_point()
+```
+Diagnostic: The observations are not independent.
+
+* * *
+
+## Part 5: Prediction
+We perform a prediction to test the final model. 
+```{r pred}
+newmovie<-data.frame(runtime=seq(30,300,15)) # Data frame of movies with runtimes between 30 min and 300 min with 15 minutes of interval. 
+pred<-predict.lm(fit2,newmovie, interval="prediction", level=0.95) # Prediction of the model
+ndf<-data.frame(runtime=seq(30,300,15),
+    fit<-pred[,1],
+    lwr<-pred[,2],
+    upr<-pred[,3])
+colnames(ndf)<-c("runtime","Expected score","lwr","upr"); ndf
+```
+As an example, the model predicts for a movie with 120 minutes of runtime to have an audience score of 65. With 95% confidence we can say that the movie is expected to have an audience score from 25.8 to 100 (the upper limit). 
+
+* * *
+
+## Part 6: Conclusion
+Through the multiple linear regression model and the executed model selection it was found that whether or not the movie director has ever won an Oscar is not a significant variable for the audience score. 
+
+The fitted model for runtime and audience score of the movie yields an final equation of 
+$$ {score_{audience}}=42.42+0.19\times{runtime} $$
+
+This is illustrated in the figure below. 
+
+```{r final}
+ggplot(df, aes(x=runtime, y=audience_score))+geom_point(alpha=0.05)+geom_smooth(method="lm")+theme_bw(base_family="Avenir")+labs(x="Runtime in minutes", y="Audience score", title="")+guides(color=guide_legend(title="Director ever won an Oscar"))+theme(legend.position="bottom")
+
+```
+
+
+As it could be inferred in the model diagnostics, the final model has very low R-squared (0.03), which demonstrates that merely 3% of the variability of response variable(audience score) as regards the explanatory variable(runtime) can be explained by the model. Primarily the weak linearity between the explanatory variable and the response variable resulted in the poor fit of the model. 
+
+Nonetheless, this study demonstrated the results of linear regression when the conditions for the least squares line is not met. 
