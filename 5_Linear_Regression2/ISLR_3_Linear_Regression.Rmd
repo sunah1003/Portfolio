@@ -1,11 +1,11 @@
 ---
-title: <center> Linear Regression </center>
-
-output: 
-  html_document: 
+title: "<center> Linear Regression </center>"
+output:
+  html_document:
     fig_height: 4
     highlight: pygments
     theme: spacelab
+  pdf_document: default
 ---
 <center> <h3> Sunah Park, 2. Jan 2019 </center>
 
