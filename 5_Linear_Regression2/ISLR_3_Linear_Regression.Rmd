@@ -9,9 +9,11 @@ output:
 ---
 <center> <h3> Sunah Park, 2. Jan 2019 </center>
 
-This markdown file is created by Sunah Park for extended lab exercises in the book 'An Introduction to Statistical Learning with Applications in R' [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). \
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
 
 * * *
+
 ### Setup for code chunks
 ```{r mychunksetup, echo=FALSE, include=TRUE} 
 rm(list=ls())
@@ -65,14 +67,14 @@ pred.lm.fit<-predict(lm.fit, data.frame(lstat=seq(1,50,5)),interval="confidence"
 pred.lm.fit2<-predict(lm.fit, data.frame(lstat=seq(1,50,5)),interval="prediction"); pred.lm.fit2
 ```
 
-The fitted model for single linear regression:
+The fitted model for simple linear regression:
 $$ {medv}=34.55-0.95\times{lstat} $$
 
 ```{r slr-plot, echo=TRUE, include=TRUE} 
 ggplot(data=Boston, aes(x=lstat, y=medv))+geom_jitter(alpha=.7, color="grey")+stat_smooth(method="lm", level=0.95)+theme_bw(base_family="Avenir")
 ```
 
-## Linear Model Diagnostics
+## Simple linear model diagnostics
 ```{r slr-dgn-df, echo=TRUE, include=TRUE} 
 df<-data.frame(x=Boston$lstat,
                y=Boston$medv,
@@ -110,15 +112,13 @@ Diagnose: The variability of residuals is non-constant.
 ```{r slr-dgn4, echo=TRUE, include=TRUE} 
 ggplot(data=df, aes(x=i, y=residuals))+geom_jitter(alpha=.3)+geom_hline(yintercept=0, color="blue", linetype="solid", size=0.5)
 ```
-Diagnose: There is no increasing or decreasing pattern of residuals. The variable is also not in time-series structure.
+Diagnose: There is no increasing or decreasing pattern of residuals. The model does not suffer from time-series structure.
 
 
 ## __2. Multiple Linear Regression__
-we
-
 ```{r mlr-mod, echo=TRUE, include=TRUE} 
 # Model selection
-lm.fit<-lm(medv~., data=Boston) # y: medv, x: all predictors in Boston 
+lm.fit<-lm(medv~., data=Boston) # Full model where y: medv, x: all predictors in Boston 
 summary(lm.fit) # infos Std.Error, tvalue, p-value, R-squared, F-stat
 
 # Model selection using p-value Backwards elimination (Start with the full model -> Drop the variable with the highest p-value and refit a smaller model -> Repeat until all variables left in the model are significant (p-value<alpha)).
@@ -126,6 +126,7 @@ lm.fit<-lm(medv~.-age, data=Boston) # The variable age is now removed from the m
 summary(lm.fit)
 
 lm.fit<-lm(medv~.-age-indus, data=Boston) # The variable age and indus are now removed from the model
+# Alternatively, the update() function can be used (e.g. update(lm.fit, ~.-age))
 summary(lm.fit) # We now have all the variables whose p-value is less than alpha. Our final model has 11 predictors.
 ```
 
@@ -141,14 +142,39 @@ The fitted model has adjusted R-squared of 0.73. In other words, 73% of the vari
 
 * * *
 
-## Part 2: Research question
-1. Is there linear relationship between the scores given by the audience and runtime of movie or the fact whether or not the movie director has ever won an Oscar?
+## Multiple linear model diagnostics
+```{r mlr-dgn-df, echo=TRUE, include=TRUE} 
+df<-data.frame(y=Boston$medv,
+               y.fit=lm.fit$fitted.values, 
+               residuals=lm.fit$residuals, 
+               abs.residuals<-abs(lm.fit$residuals),
+               i=seq(1:length(Boston$lstat)))
+```
+Multiple regression methods generally depend on the following four assumptions:
 
-2. How can we predict the audience score regarding these two variables?
-
-The response variable for this analysis is the audience score(*audience_score*) and the two explanatory variables are the runtime of movie(*runtime*) and the fact whether or not the movie director ever won an Oscar(*best_dir_win*).
+(1) Normal probability plot. In a normal probability plot for residuals, we tend to be most worried about residuals that appear to be outliers, since these indicate long tails in the distribution of residuals.
+```{r mlr-dgn1, echo=TRUE, include=TRUE} 
+ggplot(data=df, aes(residuals))+geom_histogram(binwidth=1)
+ggplot(data=df, aes(sample=residuals))+geom_qq(size=0.5)+geom_qq_line(size=0.5, col="blue")
+```
+Diagnose: There is a right skew and some outliers, but not highly extreme.
 
 * * *
+(2) Absolute values of residuals against fitted values. The plot of absolute residuals vs. fitted values is helpful to check the condition that the variance of the residuals is approximately constant.
+```{r mlr-dgn2, echo=TRUE, include=TRUE} 
+ggplot(data=df, aes(x=y.fit,y=abs.residuals))+geom_jitter(alpha=.5)
+```
+Diagnose: There are three data points which have residual value higher than 20, but not highly significant. The variance is fairly ok.
 
-## Part 3: Exploratory data analysis
+* * *
+(3) Residuals in order of their data collection. If time series structure is suspected check residuals vs. order of data collection (Plot residuals vs. order of data)
+```{r mlr-dgn3, echo=TRUE, include=TRUE} 
+ggplot(data=df, aes(x=i, y=residuals))+geom_jitter(alpha=.3)+geom_hline(yintercept=0, color="blue", linetype="solid", size=0.5)
+```
+Dignose: We see no structure that indicates a time-series issue.
 
+* * *
+In case of discrete variables: 
+
+(4) Residuals against each predictor variable. We check whether the variability doesn't fluctuate across groups. 
+As here we only have continuous numerical predictors, we skip this model assumption.
