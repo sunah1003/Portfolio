@@ -178,3 +178,42 @@ In case of discrete variables:
 
 (4) Residuals against each predictor variable. We check whether the variability doesn't fluctuate across groups. 
 As here we only have continuous numerical predictors, we skip this model assumption.
+
+
+## __3. Non-linear Transformation of the predictors__
+```{r nlt, echo=TRUE, include=TRUE} 
+lm.fit1<-lm(medv~lstat, data=Boston)
+lm.fit2a<-lm(medv~lstat+I(lstat^2), data=Boston) 
+lm.fit2b<-lm(medv~I(lstat^2), data=Boston) 
+lm.fit3<-lm(medv~poly(lstat,3), data=Boston)
+lm.fit4<-lm(medv~poly(lstat,4), data=Boston)
+lm.fit5<-lm(medv~poly(lstat,5), data=Boston)
+lm.fit6<-lm(medv~poly(lstat,6), data=Boston)
+lm.fit7<-lm(medv~log(lstat), data=Boston)
+```
+
+We use anova() function to quantify the extent to which the non-linear transformation fit is superior to the linear fit. 
+```{r anova, echo=TRUE, include=TRUE} 
+anova(lm.fit1,lm.fit2a)
+```
+The anova() function performs a hypothesis test comparing the two models. The null hypothesis is that the two models fit the data equally well, and the alternative hypothesis is that the full model is superior. Here the F-statistic is 135 and the p-value is virtually zero. This provides very clear evidence that the model containing the predictors lstat and lstat^2 is far superior to the model that only contains the predictor lstat. This is not surprising, since earlier we saw evidence for non-linearity in the relationship between medv and lstat. 
+
+
+```{r anova2, echo=TRUE, include=TRUE} 
+anova(lm.fit1,lm.fit2a, lm.fit2b,lm.fit3,lm.fit4,lm.fit5,lm.fit6,lm.fit7)
+```
+
+Comparison of adjusted r squared
+```{r adjr.nlt, echo=TRUE, include=TRUE} 
+adjr<-c(summary(lm.fit1)$adj.r.squared,
+       summary(lm.fit2a)$adj.r.squared,
+       summary(lm.fit2b)$adj.r.squared,
+       summary(lm.fit3)$adj.r.squared,
+       summary(lm.fit4)$adj.r.squared,
+       summary(lm.fit5)$adj.r.squared,
+       summary(lm.fit6)$adj.r.squared,
+       summary(lm.fit7)$adj.r.squared)
+adjr
+```
+
+Including additional polynomial terms leads to an improvement in the model fit as the increasing adjusted r squared demonstrates. However, no polynomial terms beyond fifth order have significant p-values in a regression fit. 
