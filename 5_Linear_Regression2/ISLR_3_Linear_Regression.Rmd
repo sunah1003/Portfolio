@@ -114,6 +114,8 @@ Diagnose: There is no increasing or decreasing pattern of residuals. The variabl
 
 
 ## __2. Multiple Linear Regression__
+we
+
 ```{r mlr-mod, echo=TRUE, include=TRUE} 
 # Model selection
 lm.fit<-lm(medv~., data=Boston) # y: medv, x: all predictors in Boston 
