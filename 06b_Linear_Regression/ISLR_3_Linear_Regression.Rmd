@@ -57,7 +57,7 @@ names(Boston)
 ## __1. Simple Linear Regression__
 lm() function is used to fit a simple linear regression model.
 ```{r slr-fit, echo=TRUE, include=TRUE} 
-lm.fit<-lm(medv~lstat, data=Boston) # y: medv, x: lstat from Boston database
+lm.fit<-lm(medv~lstat, data=Boston) # y: medv(median house value for 506 neighborhoods in Boston), x: lstat(percent of households with low socioeconomic status) from Boston database
 summary(lm.fit) # infos Std.Error, tvalue, P-value, R-sqaured, F-stat
 names(lm.fit) # Informations stored in linear model
 coef(lm.fit) # Coefficients of linear model
