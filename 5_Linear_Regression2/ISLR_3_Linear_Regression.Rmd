@@ -1,0 +1,152 @@
+---
+title: <center> Linear Regression </center>
+
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+<center> <h3> Sunah Park, 2. Jan 2019 </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book 'An Introduction to Statistical Learning with Applications in R' [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). \
+
+* * *
+### Setup for code chunks
+```{r mychunksetup, echo=FALSE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(MASS)
+library(ISLR)
+library(ggplot2)
+```
+
+```{r df, echo=TRUE, include=TRUE} 
+summary(Boston)
+head(Boston,3)
+Boston<-na.omit(Boston)
+sum(is.na(Boston$medv))
+names(Boston)
+```
+
+## __1. Simple Linear Regression__
+lm() function is used to fit a simple linear regression model.
+```{r slr-fit, echo=TRUE, include=TRUE} 
+lm.fit<-lm(medv~lstat, data=Boston) # y: medv, x: lstat from Boston database
+summary(lm.fit) # infos Std.Error, tvalue, P-value, R-sqaured, F-stat
+names(lm.fit) # Informations stored in linear model
+coef(lm.fit) # Coefficients of linear model
+confint(lm.fit) # Confidence interval for the coefficient estimates
+
+pred.lm.fit<-predict(lm.fit, data.frame(lstat=seq(1,50,5)),interval="confidence"); pred.lm.fit
+pred.lm.fit2<-predict(lm.fit, data.frame(lstat=seq(1,50,5)),interval="prediction"); pred.lm.fit2
+```
+
+The fitted model for single linear regression:
+$$ {medv}=34.55-0.95\times{lstat} $$
+
+```{r slr-plot, echo=TRUE, include=TRUE} 
+ggplot(data=Boston, aes(x=lstat, y=medv))+geom_jitter(alpha=.7, color="grey")+stat_smooth(method="lm", level=0.95)+theme_bw(base_family="Avenir")
+```
+
+## Linear Model Diagnostics
+```{r slr-dgn-df, echo=TRUE, include=TRUE} 
+df<-data.frame(x=Boston$lstat,
+               y=Boston$medv,
+               y.fit=lm.fit$fitted.values, 
+               residuals=lm.fit$residuals, 
+               i=seq(1:length(Boston$lstat)))
+```
+
+When fitting a least squares line of linear model, we generally require following conditions.
+
+(1) Linearity. The data should show a linear trend. We look for a random scatter of residuals around 0 (Plot residuals vs. x)
+
+```{r slr-dgn1, echo=TRUE, include=TRUE} 
+ggplot(df,aes(x=x,y=residuals))+geom_point(alpha=0.3)+geom_hline(yintercept=0, color="blue",linetype="solid",size=0.5)
+```
+Diagnose: There is some evidence of non-linearity
+
+* * *
+(2) Nearly normal residuals with mean 0. Generally the residuals must be nearly normal. When this condition is found to be unreasonable, it is usually because of outliers or concerns about influential points (Plot histogram for residuals). 
+```{r slr-dgn2, echo=TRUE, include=TRUE} 
+ggplot(data=df, aes(residuals))+geom_histogram(binwidth=1)
+ggplot(data=df, aes(sample=residuals))+geom_qq(size=0.5)+geom_qq_line(size=0.5, col="blue")
+```
+Diagnose: There is a right skew
+
+* * *
+(3) Constant variability of residuals. The variability of points around the least squares line remains roughly constant. In other words, residuals should be equally variable for low and high values of the predicted response variable (Plot residuals vs. y.fit)
+```{r slr-dgn3, echo=TRUE, include=TRUE} 
+ggplot(data=df, aes(x=y.fit,y=residuals))+geom_jitter(alpha=.3)+geom_hline(yintercept=0, color="blue", linetype="solid", size=0.5)
+```
+Diagnose: The variability of residuals is non-constant.
+
+* * *
+(4) Independent residuals. If time series structure is suspected check residuals vs. order of data collection (Plot residuals vs. order of data)
+```{r slr-dgn4, echo=TRUE, include=TRUE} 
+ggplot(data=df, aes(x=i, y=residuals))+geom_jitter(alpha=.3)+geom_hline(yintercept=0, color="blue", linetype="solid", size=0.5)
+```
+Diagnose: There is no increasing or decreasing pattern of residuals. The variable is also not in time-series structure.
+
+
+## __2. Multiple Linear Regression__
+```{r mlr-mod, echo=TRUE, include=TRUE} 
+# Model selection
+lm.fit<-lm(medv~., data=Boston) # y: medv, x: all predictors in Boston 
+summary(lm.fit) # infos Std.Error, tvalue, p-value, R-squared, F-stat
+
+# Model selection using p-value Backwards elimination (Start with the full model -> Drop the variable with the highest p-value and refit a smaller model -> Repeat until all variables left in the model are significant (p-value<alpha)).
+lm.fit<-lm(medv~.-age, data=Boston) # The variable age is now removed from the model, as it has the highest p-value that is higher than the chosen significance level alpha of 0.05 in this case.
+summary(lm.fit)
+
+lm.fit<-lm(medv~.-age-indus, data=Boston) # The variable age and indus are now removed from the model
+summary(lm.fit) # We now have all the variables whose p-value is less than alpha. Our final model has 11 predictors.
+```
+
+The final equation is:
+$$ {medv}=36.34-0.11\times{crim}+0.05\times{zn}+2.72\times{chas}-17.38\times{nox}+3.80\times{rm}-1.49\times{dis}0.30\times{rad}-0.01\times{tax}-0.95\times{ptratio}-0.01\times{black}-0.52\times{lstat} $$
+
+
+```{r mlr-adjr, echo=TRUE, include=TRUE} 
+attributes(summary(lm.fit))
+summary(lm.fit)$adj.r.squared
+```
+The fitted model has adjusted R-squared of 0.73. In other words, 73% of the variability in our response variable medv can be explained by the model. 
+
+* * *
+
+## Part 2: Research question
+1. Is there linear relationship between the scores given by the audience and runtime of movie or the fact whether or not the movie director has ever won an Oscar?
+
+2. How can we predict the audience score regarding these two variables?
+
+The response variable for this analysis is the audience score(*audience_score*) and the two explanatory variables are the runtime of movie(*runtime*) and the fact whether or not the movie director ever won an Oscar(*best_dir_win*).
+
+* * *
+
+## Part 3: Exploratory data analysis
+
