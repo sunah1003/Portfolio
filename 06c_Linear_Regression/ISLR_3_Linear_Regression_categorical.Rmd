@@ -1,0 +1,83 @@
+---
+title: "<center> Linear Regression for qualitative predictors </center>"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+<center> <h3> Sunah Park, 3. Jan 2019 </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
+
+* * *
+
+### Setup for code chunks
+```{r mychunksetup, echo=FALSE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(MASS)
+library(ISLR)
+library(ggplot2)
+```
+
+```{r df, echo=TRUE, include=TRUE} 
+summary(Carseats) # Carseats data from ISLR library
+head(Carseats,3)
+Carseats<-na.omit(Carseats)
+sum(is.na(Carseats$Sales))
+dim(Carseats)
+levels(Carseats$ShelveLoc)
+```
+
+## __Linear Regression__
+lm() function is used to fit a simple linear regression model.
+```{r slr-fit, echo=TRUE, include=TRUE} 
+lm.fit<-lm(Sales~ShelveLoc+Income , data=Carseats) # y: Sales(carseat sales), x: ShelveLoc(quality of the shelving location: Bad/Medium/Good), Income level from the database Carseats 
+summary(lm.fit) # Infos Std.Error, tvalue, P-value, R-squared, F-stat
+```
+The output shows that F=70.65 and p-value<2.2e-16, indicating that we should clearly reject the null hypothesis that the variable ShelveLoc and Income collectively have no effect on Sales. The results also show that the variable ShelveLoc is significant controlling for the variable Income, as is Income controlling for the variable ShelveLoc. 
+```{r slr-fit-continue, echo=TRUE, include=TRUE} 
+names(lm.fit) # Informations stored in linear model
+coef(lm.fit) # Coefficients of linear model
+confint(lm.fit) # Confidence interval for the coefficient estimates
+
+pred.lm.fit<-predict(lm.fit, data.frame(ShelveLoc=rep(c("Bad","Medium","Good"),each=3), Income=rep(c(20,70,120),3)),interval="confidence"); pred.lm.fit
+```
+
+The fitted model for simple linear regression:
+$$ {Sales}=4.227713+4.767518\times{ShelveLocGood}+1.871297\times{ShelveLocMedium}+0.017929\times{Income} $$
+
+* * *
+## __Testing a subset of variables using a partial F-test__
+
+```{r anova, echo=TRUE, include=TRUE} 
+lm.fit1<-lm(Sales~ShelveLoc, data=Carseats)
+anova(lm.fit, lm.fit1)
+```
+The result shows F=19.091 resulting in the p-value of 1.594e-05 at the 5% level of significance. We can reject the null hypothesis that the two models fit the data equally well. 
