@@ -58,7 +58,7 @@ names(Boston)
 lm() function is used to fit a simple linear regression model.
 ```{r slr-fit, echo=TRUE, include=TRUE} 
 lm.fit<-lm(medv~lstat, data=Boston) # y: medv(median house value for 506 neighborhoods in Boston), x: lstat(percent of households with low socioeconomic status) from Boston database
-summary(lm.fit) # infos Std.Error, tvalue, P-value, R-sqaured, F-stat
+summary(lm.fit) # infos Std.Error, tvalue, P-value, R-squared, F-stat
 names(lm.fit) # Informations stored in linear model
 coef(lm.fit) # Coefficients of linear model
 confint(lm.fit) # Confidence interval for the coefficient estimates
@@ -90,7 +90,7 @@ When fitting a least squares line of linear model, we generally require followin
 ```{r slr-dgn1, echo=TRUE, include=TRUE} 
 ggplot(df,aes(x=x,y=residuals))+geom_point(alpha=0.3)+geom_hline(yintercept=0, color="blue",linetype="solid",size=0.5)
 ```
-Diagnose: There is some evidence of non-linearity
+Diagnose: There is some non-linearity.
 
 * * *
 (2) Nearly normal residuals with mean 0. Generally the residuals must be nearly normal. When this condition is found to be unreasonable, it is usually because of outliers or concerns about influential points (Plot histogram for residuals). 
