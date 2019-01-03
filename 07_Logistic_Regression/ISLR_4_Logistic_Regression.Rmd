@@ -1,0 +1,118 @@
+---
+title: "<center> Correlation plot and Logistic Regression </center>"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+<center> <h3> Sunah Park, 3. Jan 2019 </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
+
+* * *
+
+### Setup for code chunks
+```{r mychunksetup, echo=FALSE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(MASS)
+library(ISLR)
+library(ggplot2)
+library(corrplot)
+```
+
+```{r df, echo=TRUE, include=TRUE} 
+summary(Smarket) # Stock market data from ISLR library
+head(Smarket,3)
+Smarket<-na.omit(Smarket)
+dim(Smarket)
+names(Smarket) # Lag1 to Lag5: percentage returns for each of the five previous trading days, Volume: number of shares traded on the previous day, Today: percentage return on the date in question, Direction: whether the market was Up or Down on this Date
+```
+
+
+```{r cor, echo=TRUE, include=TRUE} 
+# cor(Smarket) -> It gives an error message because the Direction variable is qualitative
+cor(Smarket[,-9])
+corrplot(cor(Smarket[,-9]), method="color",type="upper")
+```
+The correlation between the lag variables and today's returns are nearly 0. In other words, there appears to be little correlation between today's returns and previous days' returns. The only substantial correlation is between Year and Volume. 
+
+
+## __Logistic Regression__
+We fit a logistic regression model in order to predict Direction using Lag1 through Lag5 and Volume. 
+```{r glm, echo=TRUE, include=TRUE} 
+# Data Partition
+train<-Smarket$Year<2005 # Boolean vector
+Smarket_training<-Smarket[train,]
+Smarket_test<-Smarket[!train,]
+
+glm.fit<-glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume, family=binomial, data=Smarket_training) #family=binomial to run a logistic regression
+summary(glm.fit)
+```
+
+The smallest p-value here is associated with Lag1. The negative coefficient for this predictor suggests that if the market had a positive return yesterday, then it is less likely to go up today. However, at a value of 0.295, the p-value is still relatively large, and so there is no clear evidence of a real association between Lag1 and Direction.
+
+```{r glm-predict, echo=TRUE, include=TRUE} 
+glm.pred<-predict(glm.fit,newdata=Smarket_test, type="response")
+glm.pred[1:10] # The first ten probabilities
+```
+Using predict() function we predict the probability on test data that the market will go up, given values of the predictors. The type="response" option tells R to output probabilites of the form P(Y=1|X). 
+
+
+```{r glm-predict-class, echo=TRUE, include=TRUE} 
+threshold<-.5
+glm.pred.class<-as.factor(ifelse(glm.pred>threshold, "Up","Down"))
+table(glm.pred.class, Smarket_test$Direction)
+```
+In order to make a prediction as to whether the market will go up or down on a particular day, we must convert these predicted probabilities into class labels, Up or Down. If the predicted probability of a market increase is greather than the threshold of 0.5 then it gives the class label of Up, else Down.
+Given these predictions, the table() function can be used to produce a confusion matrix in order to determine how many observations were correctly or incorrectly classified.
+The accuracy of the model yields: 
+$$ accuracy= (77+44)/(77+97+34+44)=0.48 $$
+
+In this case, logistic regression correctly predicted the movement of the market 48% of the time. The test error rate is therefore 52% which is worse than random guessing. This result is not all that surprising, given that one would not generally expect to be able to use previous days' returns to predict future market performance. 
+
+We recall that the logistic regression model had very underwhelming p-values associated with all of the predictors, and that the smallest p-value, though not very small, corresponded to Lag1. Perhaps by removing the variables that appear not to be helpful in predicting Direction, we can obtain a more effective model. After all, using predictors that have no relationship with the response tends to cause a deterioration in the test error rate. So removing such predictors may in turn yield an improvement. We therefore refit the logistic regression using just Lag1 and Lag2, which seemed to have the highest predictive power in the original logistic regression model.
+
+```{r glm2, echo=TRUE, include=TRUE} 
+glm.fit<-glm(Direction~Lag1+Lag2, family=binomial, data=Smarket_training) #family=binomial to run a logistic regression
+summary(glm.fit)
+
+glm.pred<-predict(glm.fit,newdata=Smarket_test, type="response")
+glm.pred.class<-as.factor(ifelse(glm.pred>threshold,"Up","Down"))
+table(glm.pred.class, Smarket_test$Direction)
+```
+
+We now have an improved accuracy of (35+106)/(35+35+76+106)=0.56.
+
+```{r glm3, echo=TRUE, include=TRUE} 
+glm.pred<-predict(glm.fit,newdata=data.frame(Lag1=c(-1.0),Lag2=c(1.0)), type="response")
+ifelse(glm.pred>.5,"Up","Down")
+```
+
+The prediction of Direction on a day in particular when Lag1 is -1.0 and Lag2 is 1.0 is __Up__. 
