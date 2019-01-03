@@ -1,0 +1,98 @@
+---
+title: "<center> Linear/Quadratic Discriminant Analysis </center>"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+<center> <h3> Sunah Park, 3. Jan 2019 </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
+
+* * *
+
+### Setup for code chunks
+```{r mychunksetup, echo=FALSE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(MASS)
+library(ISLR)
+library(ggplot2)
+library(corrplot)
+```
+
+```{r df, echo=TRUE, include=TRUE} 
+summary(Smarket) # Stock market data from ISLR library
+head(Smarket,3)
+Smarket<-na.omit(Smarket)
+dim(Smarket)
+names(Smarket) # Lag1 to Lag5: percentage returns for each of the five previous trading days, Volume: number of shares traded on the previous day, Today: percentage return on the date in question, Direction: whether the market was Up or Down on this Date
+```
+
+## __Linear Discriminant Analysis__
+We perform Linear Discriminant Analysis on the Smarket data using lda() function from the MASS library. 
+```{r lda, echo=TRUE, include=TRUE} 
+# Data Partition
+train<-Smarket$Year<2005 # Boolean vector
+Smarket_training<-Smarket[train,]
+Smarket_test<-Smarket[!train,]
+
+lda.fit<-lda(Direction~Lag1+Lag2, data=Smarket_training)
+lda.fit
+plot(lda.fit)
+```
+The LDA output indicates that phi1=0.492 and phi2=0.508; in other words, 49.2% of the training observations correspond to days during which the market went down. It also provides the group means; these are the average of each predictor within each class, and are used by LDA as estimates of mu. These suggest that there is a tendency for the previous 2 days' returns to be negative on days when the market increases, and a tendency for the previous days' returns to be positive on days when the market declines. The coefficients of linear discriminants output provides the linear combination of Lag1 and Lag2 that are used to form the LDA decision rule: 
+$$ -0.642\times{Lag1}-0.514\times{Lag2} $$
+If this value is large, then the LDA classifier will predict a market increase, and if it is small, the LDA classifier will predict a market decline.
+
+```{r lda-pred, echo=TRUE, include=TRUE} 
+lda.pred<-predict(lda.fit, newdata=Smarket_test)
+table(lda.pred$class, Smarket_test$Direction)
+mean(lda.pred$class==Smarket_test$Direction)
+```
+As a result of Linear Discriminant Analysis we achieved the model accuracy of 56%. 
+
+
+
+## __Quadratic Discriminant Analysis__
+We now apply QDA model for the same training data.
+```{r qda, echo=TRUE, include=TRUE} 
+qda.fit<-qda(Direction~Lag1+Lag2, data=Smarket_training)
+qda.fit
+```
+The output contains the group means. But it does not contain the coefficients of the linear discriminants, because the QDA classifier involves a quadratic, rather than a linear, function of the predictors. 
+
+
+```{r qda-pred, echo=TRUE, include=TRUE} 
+qda.pred<-predict(qda.fit, newdata=Smarket_test)
+table(qda.pred$class, Smarket_test$Direction)
+mean(qda.pred$class==Smarket_test$Direction)
+```
+
+Using QDA model, we can predict almost 60% of the time. This suggests that the quadratic form assumed b QDA may capture the true relationship more accurately than the linear forms assumed by LDA and logistic regression. 
