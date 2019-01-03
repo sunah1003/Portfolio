@@ -207,8 +207,8 @@ Sunah Park, 3. Jan 2019
 <div id="linear-regression" class="section level2">
 <h2><strong>Linear Regression</strong></h2>
 <p>lm() function is used to fit a simple linear regression model.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">lm.fit&lt;-<span class="kw">lm</span>(Sales<span class="op">~</span>ShelveLoc<span class="op">+</span>Income , <span class="dt">data=</span>Carseats) <span class="co"># y: Sales(carseat sales), x: ShelveLoc(quality of the shelving location: Bad/Medium/Good), Income level from the database Carseats </span>
-<span class="kw">summary</span>(lm.fit) <span class="co"># Infos Std.Error, tvalue, P-value, R-squared, F-stat</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">lm.fit&lt;-<span class="kw">lm</span>(Sales<span class="op">~</span>ShelveLoc<span class="op">+</span>Income , <span class="dt">data=</span>Carseats) <span class="co"># y: Sales(carseat sales), x: ShelveLoc(quality of the shelving location: Bad, Medium or Good), Income level from the database Carseats </span>
+<span class="kw">summary</span>(lm.fit) <span class="co"># Infos Std.Error, t-score, p-value, R-squared, F-stat</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## lm(formula = Sales ~ ShelveLoc + Income, data = Carseats)

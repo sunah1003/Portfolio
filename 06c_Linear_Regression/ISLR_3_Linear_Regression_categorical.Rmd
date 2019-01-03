@@ -58,10 +58,12 @@ levels(Carseats$ShelveLoc)
 ## __Linear Regression__
 lm() function is used to fit a simple linear regression model.
 ```{r slr-fit, echo=TRUE, include=TRUE} 
-lm.fit<-lm(Sales~ShelveLoc+Income , data=Carseats) # y: Sales(carseat sales), x: ShelveLoc(quality of the shelving location: Bad/Medium/Good), Income level from the database Carseats 
-summary(lm.fit) # Infos Std.Error, tvalue, P-value, R-squared, F-stat
+lm.fit<-lm(Sales~ShelveLoc+Income , data=Carseats) # y: Sales(carseat sales), x: ShelveLoc(quality of the shelving location: Bad, Medium or Good), Income level from the database Carseats 
+summary(lm.fit) # Infos Std.Error, t-score, p-value, R-squared, F-stat
 ```
 The output shows that F=70.65 and p-value<2.2e-16, indicating that we should clearly reject the null hypothesis that the variable ShelveLoc and Income collectively have no effect on Sales. The results also show that the variable ShelveLoc is significant controlling for the variable Income, as is Income controlling for the variable ShelveLoc. 
+
+
 ```{r slr-fit-continue, echo=TRUE, include=TRUE} 
 names(lm.fit) # Informations stored in linear model
 coef(lm.fit) # Coefficients of linear model
