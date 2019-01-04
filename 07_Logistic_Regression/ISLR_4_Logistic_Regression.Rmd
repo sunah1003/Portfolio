@@ -7,7 +7,7 @@ output:
     theme: spacelab
   pdf_document: default
 ---
-<center> <h3> Sunah Park, 3. Jan 2019 </center>
+<center> <h3> Sunah Park </center>
 
 This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
 
