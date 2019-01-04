@@ -1,5 +1,5 @@
 ---
-title: "<center> Cross Validation </center>"
+title: "<center> Resampling Method 1. Cross Validation </center>"
 output:
   html_document:
     fig_height: 4

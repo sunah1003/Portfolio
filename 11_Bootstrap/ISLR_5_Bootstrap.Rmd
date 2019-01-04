@@ -1,0 +1,121 @@
+---
+title: "<center> Resampling Method 2. Bootstrap </center>"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+<center> <h3> Sunah Park </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
+
+* * *
+
+### Setup for code chunks
+```{r mychunksetup, echo=TRUE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(ISLR)
+library(boot) # function boot()
+library(ggplot2)
+```
+
+
+```{r df, echo=TRUE, include=TRUE} 
+summary(Portfolio) # Stock market data from ISLR library
+head(Portfolio,3)
+Portfolio<-na.omit(Portfolio)
+dim(Portfolio)
+```
+
+### alpha calculation
+```{r alpha, echo=TRUE, include=TRUE} 
+alpha<-function(data, index) {
+    x<-data$X[index]
+    y<-data$Y[index]
+    alpha<-(var(y)-cov(x,y))/(var(x)+var(y)-2*cov(x,y))
+    return(alpha)
+}
+
+alpha(Portfolio, 1:100)
+set.seed(1)
+alpha(Portfolio, sample(100,100, replace=TRUE))
+```
+
+
+
+### boot() function
+```{r boot, echo=TRUE, include=TRUE} 
+set.seed(1)
+boot(data=Portfolio, statistic=alpha, R=1000)
+```
+boot() generates R bootstrap replicate of a statistic applied to data. The bootstrap sample is the same size as the original dataset. As a result, some samples will be represented multiple times in the bootstrap sample while others will not be selected at all. __statistic__ is a function which when applied to data returns a vector containing the statistics of interest. R is the number of bootstrap replicates. 
+The final output shows that using the original data, alpha=0.5758 and that the bootstrap estimate for standard error is 0.0886. 
+
+### Estimating the Accuracy of a Linear Regression Model
+The bootstrap approach can be used to assess the variability of the coefficient estimates and predictions from a statistical learning method. Here we use the bootstrap approach in order to assess the variability of the estimates for betas, the intercept and slope terms for the linear regression model that uses horsepower to predict pmg in the Auto data set. We compare the estimates obtained using the bootstrap. 
+
+```{r boot-lm, echo=TRUE, include=TRUE} 
+set.seed(1)
+boot.fn<-function(data, index) {
+    return(coef(lm(mpg~horsepower, data=data, subset=index)))
+}
+
+set.seed(1)
+boot.fn(data=Auto,sample(392,392,replace=TRUE))
+```
+The boot.fn() function is used in order to create bootstrap estimates for the intercept and slope terms by randomly sampling among the observations with replacement.
+
+
+
+We now compute the standard errors of 1000 bootstrap estimates for the intercept and slope terms.
+```{r boot-lm-func, echo=TRUE, include=TRUE} 
+set.seed(1)
+boot(data=Auto, statistic=boot.fn, R=1000)
+summary(lm(mpg~horsepower,data=Auto))$coef
+```
+This indicates that the bootstrap estimate for SE(beta0) is 0.86, and that the bootstrap estimate for SE(beta1) is 0.0074. The standard error estimates for beta0 and beta1 from the linear model fit is 0.717 and 0.006, respectively. There are somewhat different from the estimates obtained using the bootstrap. 
+
+
+
+We compute the bootstrap standard error estimates and the standard linear regression estimates that result from fitting the quadratic model.
+```{r boot-lm2, echo=TRUE, include=TRUE} 
+set.seed(1)
+boot.fn<-function(data, index) {
+    return(coef(lm(mpg~horsepower+I(horsepower^2), data=data, subset=index)))
+}
+
+set.seed(1)
+boot(data=Auto, statistic=boot.fn, R=1000)
+summary(lm(mpg~horsepower+I(horsepower^2), data=Auto))$coef
+```
+
+Since this model provides a good fit to the data, there is now a better correspondence between the bootstrap estimates and the standard estimates. 
+
+
