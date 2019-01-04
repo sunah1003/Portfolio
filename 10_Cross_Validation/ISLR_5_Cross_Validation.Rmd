@@ -1,0 +1,122 @@
+---
+title: "<center> Cross Validation </center>"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+<center> <h3> Sunah Park </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
+
+* * *
+
+### Setup for code chunks
+```{r mychunksetup, echo=TRUE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+## The Validation Set Approach
+We explore the use of the validation set approach in order to estimate the test error rates that result from fitting various linear models on the Auto data set. 
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(ISLR)
+library(boot) # function cv.glm()
+library(ggplot2)
+```
+
+
+```{r df, echo=TRUE, include=TRUE} 
+summary(Auto) # Stock market data from ISLR library
+head(Auto,3)
+Auto<-na.omit(Auto)
+dim(Auto)
+
+set.seed(1)
+train<-sample(392,196) # selecting a random subset of 196 observations out of the original 392 observations.
+```
+
+### Linear Regression
+```{r slr1, echo=TRUE, include=TRUE} 
+lm.fit1<-lm(mpg~horsepower, data=Auto, subset=train)
+mean((Auto$mpg[-train]-predict(lm.fit1, newdata=Auto[-train,]))^2) # MSE
+```
+The estimated test MSE for the linear regression fit is 26.14. 
+
+```{r slr2, echo=TRUE, include=TRUE} 
+lm.fit2<-lm(mpg~poly(horsepower,2), data=Auto, subset=train)
+mean((Auto$mpg[-train]-predict(lm.fit2, newdata=Auto[-train,]))^2) # MSE
+```
+By using quadratic regression we get decreased MSE of 19.82.
+
+```{r slr3, echo=TRUE, include=TRUE} 
+lm.fit3<-lm(mpg~poly(horsepower,3), data=Auto, subset=train)
+mean((Auto$mpg[-train]-predict(lm.fit3, newdata=Auto[-train,]))^2) # MSE
+```
+With cubic regression, the error rate is 19.78. 
+
+
+## __Leave-One-Out Cross-Validation(LOOCV)__
+For LOOCV, we use the ith sample point as test data(test sample size=1) and the remaining n-1 sample points as training data. The LOOCV estimate can be automatically computed for any generalized linear model using the glm() and cv.glm() functions. If we use glm() to fit a model without passing in the family argument, then it performs linear regression, just like the lm() function. cv.glm() calculates the estimated K-fold cross-validation prediction error for generalized linear model. By default K is equal to the number of observations in data which gives LOOCV. 
+
+```{r loocv, echo=TRUE, include=TRUE} 
+glm.fit<-glm(mpg~horsepower, data=Auto)
+cv.err<-cv.glm(data=Auto, glmfit=glm.fit) 
+cv.err$delta # cross-validation results: A vector length of two. The first component is the raw cross-validation estimate of prediction error. The second component is the adjusted cross-validation estimate. The adjustment is designed to compensate for the bias introduced by not using leave-one-out cross-validation.
+```
+
+```{r loocv-func, echo=TRUE, include=TRUE} 
+cv.err<-vector()
+for (i in 1:5) {
+    glm.fit<-glm(mpg~poly(horsepower,i), data=Auto)
+    cv.err[i]<-cv.glm(data=Auto, glmfit=glm.fit)$delta[1] # mean k estimates of test error
+}
+
+df_cv<-data.frame(order=c(1:5), cv.err=cv.err)
+ggplot(data=df_cv, aes(y=cv.err, x=order))+geom_point()
+```
+
+We see a sharp drop in the estimated test MSE between the linear and quadratic fits, but then no clear improvement from using higher-order polynomials.
+
+
+* * *
+
+## __k-Fold Cross-Validation__
+The data is divided randomly into K groups. For each group the generalized linear model is fit to data omitting that group, then the function cost is applied to the observed responses in the group that was omitted from the fit and the prediction made by the fitted models for these observations. 
+
+The cv.glm() function can also be used to implement k-fold CV. We perform 10-Fold cross validation (k:10 as a common choise for k).
+
+```{r kfold, echo=TRUE, include=TRUE} 
+cv.err<-vector()
+for (i in 1:10) {
+    glm.fit<-glm(mpg~poly(horsepower,i), data=Auto)
+    cv.err[i]<-cv.glm(data=Auto, glmfit=glm.fit, K=10)$delta[1] # mean k estimates of test error
+}
+
+df_cv<-data.frame(order=c(1:10), cv.err=cv.err)
+ggplot(data=df_cv, aes(y=cv.err, x=order))+geom_point()
+```
+The computation time is much shorter than that of LOOCV. We still see little evidence that using cubic or higher-order polynomial terns leads to lower test error than simply using a quadratic fit. 
