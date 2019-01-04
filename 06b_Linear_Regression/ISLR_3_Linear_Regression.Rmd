@@ -15,7 +15,7 @@ This markdown file is created by Sunah Park for extended lab exercises in the bo
 * * *
 
 ### Setup for code chunks
-```{r mychunksetup, echo=FALSE, include=TRUE} 
+```{r mychunksetup, echo=TRUE, include=TRUE} 
 rm(list=ls())
 # default r markdown global options in document
 knitr::opts_chunk$set(

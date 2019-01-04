@@ -161,6 +161,25 @@ Sunah Park, 3. Jan 2019
 <hr />
 <div id="setup-for-code-chunks" class="section level3">
 <h3>Setup for code chunks</h3>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">rm</span>(<span class="dt">list=</span><span class="kw">ls</span>())
+<span class="co"># default r markdown global options in document</span>
+knitr<span class="op">::</span>opts_chunk<span class="op">$</span><span class="kw">set</span>(
+   ########## Text results ##########
+    <span class="dt">echo=</span><span class="ot">TRUE</span>, 
+    <span class="dt">warning=</span><span class="ot">FALSE</span>, <span class="co"># to preserve warnings in the output </span>
+    <span class="dt">error=</span><span class="ot">FALSE</span>, <span class="co"># to preserve errors in the output</span>
+    <span class="dt">message=</span><span class="ot">FALSE</span>, <span class="co"># to preserve messages</span>
+    <span class="dt">strip.white=</span><span class="ot">TRUE</span>, <span class="co"># to remove the white lines in the beginning or end of a source chunk in the output </span>
+
+    ########## Cache ##########
+    <span class="dt">cache=</span><span class="ot">TRUE</span>,
+   
+    ########## Plots ##########
+    <span class="dt">fig.path=</span><span class="st">&quot;&quot;</span>, <span class="co"># prefix to be used for figure filenames</span>
+    <span class="dt">fig.width=</span><span class="dv">8</span>,
+    <span class="dt">fig.height=</span><span class="dv">6</span>,
+    <span class="dt">dpi=</span><span class="dv">200</span>
+)</code></pre></div>
 <hr />
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(MASS)
 <span class="kw">library</span>(ISLR)

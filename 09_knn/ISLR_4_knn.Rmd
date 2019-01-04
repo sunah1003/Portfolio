@@ -1,0 +1,174 @@
+---
+title: "<center> k-Nearest Neighbors </center>"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+<center> <h3> Sunah Park, 4. Jan 2019 </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
+
+* * *
+
+### Setup for code chunks
+```{r mychunksetup, echo=TRUE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(MASS)
+library(ISLR)
+library(class)
+library(ggplot2)
+library(corrplot)
+```
+
+```{r df, echo=TRUE, include=TRUE} 
+summary(Smarket) # Stock market data from ISLR library
+head(Smarket,3)
+Smarket<-na.omit(Smarket)
+dim(Smarket)
+names(Smarket) # Lag1 to Lag5: percentage returns for each of the five previous trading days, Volume: number of shares traded on the previous day, Today: percentage return on the date in question, Direction: whether the market was Up or Down on this Date
+```
+
+## __knn Exercise 1__
+We now perform KNN using the knn() function from class library. 
+```{r knn1-data, echo=TRUE, include=TRUE} 
+attach(Smarket)
+train<-Smarket$Year<2005 # Boolean vector
+train.X<-cbind(Lag1, Lag2)[train,]
+test.X<-cbind(Lag1, Lag2)[!train,]
+train.Y<-Direction[train]
+```
+
+
+```{r knn1_k1, echo=TRUE, include=TRUE} 
+set.seed(1)
+knn.pred<-knn(train=train.X, test=test.X, cl=train.Y, k=1,prob=F, use.all=T) # knn classification for test set from training set.
+table(knn.pred, Smarket$Direction[!train])
+mean(knn.pred==Smarket$Direction[!train])
+```
+Rather than a two-step approach, knn() performs predictions using a single command. For each row of the test set, the k nearest(in Euclidean distance) training set vectors are found, and the classification is decided by majority vote, with ties broken at random. 
+
+When using K=1 only 50% of the observations are correctly predicted. It may be that K=1 results in an overly flexible fit to the data. We repeat the analysis using K=3.
+
+```{r knn1_k3, echo=TRUE, include=TRUE} 
+set.seed(1)
+knn.pred<-knn(train=train.X, test=test.X, cl=train.Direction, k=3,prob=F, use.all=T) # knn classification for test set from training set.
+table(knn.pred, Smarket$Direction[!train])
+mean(knn.pred==Smarket$Direction[!train])
+```
+The results have improved slightly (accuracy of 0.532). We try with K=5.
+
+```{r knn_k5, echo=TRUE, include=TRUE} 
+set.seed(1)
+knn.pred<-knn(train=train.X, test=test.X, cl=train.Direction, k=5,prob=F, use.all=T) # knn classification for test set from training set.
+table(knn.pred, Smarket$Direction[!train])
+mean(knn.pred==Smarket$Direction[!train])
+```
+With k=5, we have deterioration in accuracy (0.484). 
+
+
+## __knn Exercise 2__
+
+```{r df2, echo=TRUE, include=TRUE} 
+summary(Caravan) # Caravan insurance data from ISLR library
+head(Caravan,3)
+Caravan<-na.omit(Caravan)
+dim(Caravan)
+names(Caravan) 
+table(Caravan$Purchase)
+```
+
+From the random guessing we can expect that 6%(=348/(5474+348)) of customers would buy insurance. 
+
+* * * 
+### Feature Scaling 
+As the knn classifier predicts the class of a given test observation by identifying the observations that are nearest to it, the scale of the variables matters. Any variables that are on a large scale will have a much larger effect on the distance between the observations, and hence on the KNN classifier, than variables that are on a small scale. A good way to handle this problem is to standardize the data so that all variables are given a mean of zero and a standard deviation of one. Then all variables will be on a comparable scale. The scale() function does this. 
+
+```{r featurescaling, echo=TRUE, include=TRUE} 
+std.X<-scale(Caravan[,-86]) # scaling the columns of Caravan (except of the 86th column which is qualitative variable Purchase) to mu 0 and sd 1 
+var(Caravan[,1]); var(std.X[,1]) # Comparing original vs. standardized data
+var(Caravan[,10]); var(std.X[,10])
+```
+
+
+* * *
+```{r knn2-df, echo=TRUE, include=TRUE} 
+attach(Caravan)
+test<-1:1000
+train.X<-std.X[-test,]
+test.X<-std.X[test,]
+train.Y<-Purchase[-test]
+test.Y<-Purchase[test]
+```
+
+```{r knn2_k1, echo=TRUE, include=TRUE} 
+set.seed(1)
+knn.pred<-knn(train=train.X, test=test.X, cl=train.Y, k=1,prob=F, use.all=T) # knn classification for test set from training set.
+table(knn.pred, test.Y)
+mean(knn.pred!=test.Y)
+```
+The knn error rate is approximately 12% which may appear to be fairly good. However, since only 6% of customers purchased insurance, we could get the error rate down to 6% by always predicting __No__ regardless of the values of the predictors. 
+
+Suppose that the company would like to try to sell insurance only to customers who are likely to buy it. So the overall error rate is not of interest. Instead, the fraction of individuals that are correctly predicted to buy insurance is of interest. Among 77 such customers, 9 (11.7%) actually do purchase insurance. This is double the rate that one would obtain from random guessing. 
+
+```{r knn2_k3, echo=TRUE, include=TRUE} 
+set.seed(1)
+knn.pred<-knn(train=train.X, test=test.X, cl=train.Y, k=3,prob=F, use.all=T) # knn classification for test set from training set.
+table(knn.pred, test.Y)
+```
+Using k=3, the success rate increases to 20%. 
+
+```{r knn2_k5, echo=TRUE, include=TRUE} 
+set.seed(1)
+knn.pred<-knn(train=train.X, test=test.X, cl=train.Y, k=5,prob=F, use.all=T) # knn classification for test set from training set.
+table(knn.pred, test.Y)
+```
+With k=5, the rate is 26.7%. This is over four times the rate that results from random guessing. 
+
+
+### Comparison of knn with logistic regression model
+
+```{r glm1, echo=TRUE, include=TRUE} 
+glm.fit<-glm(Purchase~., data=Caravan, family=binomial, subset=-test)
+glm.pred<-predict(glm.fit, newdata=Caravan[test,], type="response")
+threshold<-.5
+glm.pred.class<-as.factor(ifelse(glm.pred>threshold, "Yes","No"))
+table(glm.pred.class, Caravan$Purchase[test])
+```
+If we use 0.5 as the predicted probability cut-off for the classifier, then we have a problem: only seven of the test observations are predicted to purchase insurance. Even worse, we are wrong about all of these. However, we are not required to use a cut-off of 0.5. We now perform with a new cut-off of 0.25.
+
+```{r glm2, echo=TRUE, include=TRUE} 
+glm.fit<-glm(Purchase~., data=Caravan, family=binomial, subset=-test)
+glm.pred<-predict(glm.fit, newdata=Caravan[test,], type="response")
+threshold<-.25
+glm.pred.class<-as.factor(ifelse(glm.pred>threshold, "Yes","No"))
+table(glm.pred.class, Caravan$Purchase[test])
+```
+Among 33 of predicted purchase, 11 customers actually do purchase insurance. We are correct for about 33%, which is over five times better than random guessing.
