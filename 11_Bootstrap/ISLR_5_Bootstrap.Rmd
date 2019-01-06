@@ -1,11 +1,11 @@
 ---
 title: "<center> Resampling Method 2. Bootstrap </center>"
 output:
+  pdf_document: default
   html_document:
     fig_height: 4
     highlight: pygments
     theme: spacelab
-  pdf_document: default
 ---
 <center> <h3> Sunah Park </center>
 
