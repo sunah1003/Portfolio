@@ -221,7 +221,7 @@ We now try to choose among the models of different sizes using cross-validation.
 k<-10
 set.seed(1)
 folds<-sample(1:k, nrow(Hitters), replace=TRUE)
-cv.errors<-matrix(NA, k,19, dimnames=list(NULL, paste(1:19)))
+cv.errors<-matrix(NA, nrow=k,ncol=19)
 ```
 
 Now we write a for loop that performs cross-validation. In the jth fold, the elements of folds that equal j are in the test set, and the remainder are in the training set. We make our predicctions for each model size, compute the test errors on the appropriate subset, and store them in the appropriate slot in the matrix cv.errors.
@@ -229,7 +229,7 @@ Now we write a for loop that performs cross-validation. In the jth fold, the ele
 for (j in 1:k) {
     best.fit<-regsubsets(Salary~., data=Hitters[folds!=j,], nvmax=19)
     for (i in 1:19) {
-        pred<-predict(best.fit, Hitters[folds==j,], id=i)
+        pred<-predict(best.fit, Hitters[folds==j,],id=i)
         cv.errors[j,i]<-mean((Hitters$Salary[folds==j]-pred)^2)
     }
 }
