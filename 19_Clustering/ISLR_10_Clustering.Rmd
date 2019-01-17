@@ -1,0 +1,133 @@
+---
+title: "<center> Clustering </center>"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+<center> <h3> Sunah Park </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
+
+* * *
+
+### Setup for code chunks
+```{r mychunksetup, echo=TRUE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(ISLR)
+library(ggplot2)
+library(caret)
+```
+
+
+* * *
+## __1. K-Means Clustering__
+```{r df, echo=TRUE, include=TRUE} 
+set.seed(2)
+x<-matrix(rnorm(50*2), ncol=2)
+x[1:25,1]<-x[1:25,1]+3
+x[1:25,2]<-x[1:25,2]-4
+```
+
+We now perform K-means clustering with K=2. 
+```{r kmeans, echo=TRUE, include=TRUE} 
+km.out<-kmeans(x, centers=2, nstart=20, iter.max=1000) # centers: number of clusters, iter.max: maximum number of iteration, nstart: number of random sets
+names(km.out)
+km.out$cluster
+plot(x, col=(km.out$cluster))
+```
+
+The cluster assignments of the 50 observations are contained in km.out$cluster. The K-means clustering perfectly separated the observations into two clusters even though we did not supply any group information to kmeans(2).  
+Here the observations can be easily plotted because they are two-dimensional. If there were more than two variables then we could instead perform PCA and plot the first two principal components score vectors.
+
+For real data, however, in general we do not know the true number of clusters. We could instead have performed K-Means clustering with K=3.
+```{r kmeans2, echo=TRUE, include=TRUE} 
+set.seed(4)
+km.out<-kmeans(x, centers=3, nstart=20)
+names(km.out)
+km.out
+km.out$cluster
+plot(x, col=(km.out$cluster))
+```
+
+To run the kmeans() function in R with multiple initial cluster assignments, we use the nstart argument. If a value of nstart greater than one is used, the K-means clustering will be performed using multiple random assignments and the kmeans() function will report only the best results.
+```{r kmeans3, echo=TRUE, include=TRUE} 
+set.seed(3)
+km.out1<-kmeans(x, centers=3, nstart=1)
+km.out1$withinss # Vector of within-cluster sum of squares
+km.out1$tot.withinss # total within-cluster sum of squares=sum(withinss)
+
+km.out20<-kmeans(x, centers=3, nstart=20)
+km.out20$withinss # Vector of within-cluster sum of squares
+km.out20$tot.withinss
+```
+It is strongly recommended running K-means clustering with a large value of nstart, such as 20 or 50, since otherwise an undesirable local optimum may be obtained. 
+
+
+* * *
+## __2. Hierarchical Clustering__
+The hclust() function implements hierarchical clustering. 
+```{r hclust, echo=TRUE, include=TRUE} 
+xdist<-dist(x) # 50 times 50 inter-observation Euclidean distance matrix
+hc.complete<-hclust(xdist, method="complete") # hclust with complete linkage
+hc.average<-hclust(xdist, method="average") # hclust with average linkage
+hc.single<-hclust(xdist, method="single") # hclust with single linkage
+
+par(mfrow=c(1,3))
+plot(hc.complete, main="Complete Linkage")
+plot(hc.average, main="Average Linkage")
+plot(hc.single, main="Single Linkage")
+
+
+
+```
+
+To determine the cluster labels for each observation associated with a given cut of the dendrogram, we can use the cutree() function.
+```{r cutree, echo=TRUE, include=TRUE} 
+cutree(hc.complete, 2)
+cutree(hc.average,2)
+cutree(hc.single,2)
+cutree(hc.single,4)
+```
+For this data, complete and average linkage generally separate the observations into their correct groups. However, single linkage identifies one point as belonging to its own cluster. A more sensible answer is obtained when four clusters are selected, although there are still two singletons.
+
+To scale the variables before performing hierarchical clustering of the observations, we use the scale() function.
+```{r scale, echo=TRUE, include=TRUE} 
+par(mfrow=c(1,2))
+plot(hclust(dist(x), method="complete"), main="Cluster Dendrogram")
+plot(hclust(dist(scale(x)), method="complete"), main="Cluster Dendrogram after scaling")
+```
+
+Correlation-based distance can be computed using the as.dist() function, which converts an arbitrary square symmetric matrix into a form that the hclust() function recognizes as a distance matrix. However, this only makes sense for data with at least three features since the absolute correlation between any two observations with measurements on two features is always 1. 
+```{r corr, echo=TRUE, include=TRUE} 
+x<-matrix(rnorm(30*3), ncol=3)
+dd<-as.dist(1-cor(t(x)))
+plot(hclust(dd, method="complete"), main="Complete Linkage with Correlation-based distance")
+```

@@ -1,0 +1,96 @@
+---
+title: "<center> Principal Component Analysis </center>"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+<center> <h3> Sunah Park </center>
+
+This markdown file is created by Sunah Park for extended lab exercises in the book _An Introduction to Statistical Learning with Applications in R_ [(ISLR)](https://www-bcf.usc.edu/~gareth/ISL/ISLR%20First%20Printing.pdf). 
+
+
+* * *
+
+### Setup for code chunks
+```{r mychunksetup, echo=TRUE, include=TRUE} 
+rm(list=ls())
+# default r markdown global options in document
+knitr::opts_chunk$set(
+   ########## Text results ##########
+    echo=TRUE, 
+    warning=FALSE, # to preserve warnings in the output 
+    error=FALSE, # to preserve errors in the output
+    message=FALSE, # to preserve messages
+    strip.white=TRUE, # to remove the white lines in the beginning or end of a source chunk in the output 
+
+    ########## Cache ##########
+    cache=TRUE,
+   
+    ########## Plots ##########
+    fig.path="", # prefix to be used for figure filenames
+    fig.width=8,
+    fig.height=6,
+    dpi=200
+)
+```
+
+
+
+* * * 
+```{r lib, echo=TRUE, include=TRUE} 
+library(ISLR)
+library(ggplot2)
+library(caret)
+```
+
+
+* * *
+## __Principal Component Analysis__
+```{r df, echo=TRUE, include=TRUE} 
+states<-row.names(USArrests) # 50 states
+names(USArrests)
+apply(USArrests, 2, var)
+```
+The variables in USArrests dataset have vastly different variances. The UrbanPop variable measures the percentage of the population in each state living in an urban area, which is not a comparable number to the number of rapes in each state per 100000 individuals. If we failed to scale the variables before performing PCA, then most of the principal components that we observed would be driven by the Assault variable, since it has by far the largest mean and variance. Thus, it is important to standardize the variables to have mean zero and standard deviation one before performing PCA.
+
+We now perform principal component analysis using the prcomp() function, which is one of several functions in R that perform PCA.
+```{r pca, echo=TRUE, include=TRUE} 
+pr.out<-prcomp(USArrests, scale=TRUE)
+names(pr.out)
+pr.out$center
+pr.out$scale
+pr.out$rotation
+```
+By default, the prcomp() function centers the variables to have mean zero. By using the option scale=TRUE, we scale the variables to have standard deviation one. The center and scale components correspond to the means and sd of variables that were used for scaling prior to implementing PCA. The rotation matrix provides the principal component loadings. Each column of pr.out$rotation contains the corresponding principal component loading vector. We see that there are four distinct principal components. This is to be expected because there are in general min(n-1, p) informative principal components in a dataset with n observations and p variables. 
+
+
+Using the prcomp() function, we do not need to explicitly multiply the data by the principal component loading vectors in order to obtain the principal component score vectors. Rather the 50 times 4 matrix x has as its columns the principal component score vectors. 
+
+```{r pca2, echo=TRUE, include=TRUE} 
+dim(pr.out$x)
+biplot(pr.out, scale=0) # plot the first two principal components
+```
+The scale=0 argument to biplot() ensures that the arrows are scaled to represent the loadings; other values for scale give slightly different biplots with different interpretations. 
+
+```{r pca3, echo=TRUE, include=TRUE} 
+pr.out$rotation<--pr.out$rotation
+pr.out$x<--pr.out$x
+biplot(pr.out, scale=0)
+```
+
+
+The prcomp() function also outputs the standard deviation of each principal component. 
+```{r pca4, echo=TRUE, include=TRUE} 
+pr.out$sdev
+pr.var<-pr.out$sdev^2 ; pr.var # Variance
+pve<-pr.var/sum(pr.var); pve # Proportion ov variance
+```
+We see that the first principal component explains 62% of the variance in the data, the next principal component explans 24.7% of the variance and so forth. We can plot the PVE explained by each component, as well as the cumulative PVE. 
+
+```{r pca5, echo=TRUE, include=TRUE} 
+plot(pve, type="b")
+plot(cumsum(pve), type="b")
+```
